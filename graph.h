@@ -5,6 +5,7 @@
 #include <stack>
 using namespace std;
 
+
 class Graph {
     public:
         Graph(ifstream &file);
