@@ -146,8 +146,8 @@ void storeListOfAiports(ifstream &file1, ifstream &file2)
         value = word;
         getline(file2, word, ',');
         getline(file2, word, ',');
-        getline(file2, word);
         key = word;
+        getline(file2, word);
 
         stateTable[key].push_back(value);
     }
