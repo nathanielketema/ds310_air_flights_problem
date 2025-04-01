@@ -24,7 +24,7 @@ typedef unordered_map< string, vector<string> > mapState;
 typedef unordered_map< string, vector<AirportDetails> > mapAirport;
 
 void displayMenu();
-void storeListOfAiports(ifstream &file1, ifstream &file2);
+void storeListOfAiports(ifstream &file);
 void storeSampleFlights(ifstream &file);
 void display_using_airport_code(string code);
 void airports_in_state(string state);
@@ -43,13 +43,12 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    ifstream listOfAirports1, listOfAirports2, sampleFlights;
-    listOfAirports1.open(argv[1]);
-    listOfAirports2.open(argv[1]);
+    ifstream listOfAirports, sampleFlights;
+    listOfAirports.open(argv[1]);
     sampleFlights.open(argv[2]);
 
 
-    storeListOfAiports(listOfAirports1, listOfAirports2);
+    storeListOfAiports(listOfAirports);
     storeSampleFlights(sampleFlights);
     displayMenu();
 
@@ -121,47 +120,30 @@ void displayMenu()
     } while (true);
 }
 
-void storeListOfAiports(ifstream &file1, ifstream &file2)
+void storeListOfAiports(ifstream &file)
 {
     string word, key, value;
     AirportDetails data;
-    
-    // Hash Table using airports as keys
-    while(getline(file1, word, ','))
-    {
-        key = word;
-        getline(file1, word, ',');
-        data.name = word;
-        getline(file1, word, ',');
+
+    // Airport code to AirportDetails
+    while (getline(file, word, ',')) {
+        key = word; // Airport Code
+        getline(file, word, ',');
+        data.name = word; // Airport Name
+        getline(file, word, ',');
+        data.state = word; // State
+        getline(file, word);  // City
         data.city = word;
-        getline(file1, word);
-        data.state = word;
 
         airportTable[key].push_back(data);
     }
 
-    // Hash Table using state as keys
-    while(getline(file2, word, ','))
-    {
-        value = word;
-        getline(file2, word, ',');
-        getline(file2, word, ',');
-        key = word;
-        getline(file2, word);
-
-        stateTable[key].push_back(value);
+    // State to list of airport codes
+    for (const auto& pair : airportTable) {
+        for (const auto& airport : pair.second) {
+            stateTable[airport.state].push_back(pair.first);
+        }
     }
-
-    // todo: test, remove later
-    /*
-    for (auto& pair : stateTable)
-    {
-        cout << pair.first << ": " << endl;
-        for (auto &airport : pair.second)
-            cout << airport << endl;
-        cout << endl;
-    }
-    */
 }
 
 void storeSampleFlights(ifstream &file)

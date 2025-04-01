@@ -3,7 +3,18 @@
 #include <iomanip>
 #include <queue>
 #include <stack>
+#include <unordered_map>
+#include <vector>
 using namespace std;
+
+struct FlightDetails {
+    string depTime;
+    string arrTime;
+    int cost;
+    int miles;
+    string airline;
+    string flightID;
+};
 
 class Graph {
     public:
@@ -21,4 +32,5 @@ class Graph {
         int adjacencyMatrix[100][100];
         int numberOfNodes;
         int numberOfEdges;
+        unordered_map< string, vector<FlightDetails> > adjacencyList;
 };
