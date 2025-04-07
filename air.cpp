@@ -11,9 +11,11 @@ struct AirportDetails {
     string state;
 };
 
-struct FlightDetais {
-    string depTime;
-    string arrTime;
+struct FlightDetails {
+    string source;
+    string destination;
+    int depTime;
+    int arrTime;
     int cost;
     int miles;
     string airline;
@@ -22,6 +24,7 @@ struct FlightDetais {
 
 typedef unordered_map< string, vector<string> > mapState;
 typedef unordered_map< string, vector<AirportDetails> > mapAirport;
+typedef unordered_map< string, unordered_map < string, vector<FlightDetails> > > flightsMatrix;
 
 void displayMenu();
 void storeListOfAiports(ifstream &file);
@@ -34,6 +37,7 @@ void flights_source_to_destination(string source, string destination);
 
 mapState stateTable;
 mapAirport airportTable;
+flightsMatrix flights;
 
 int main(int argc, char *argv[])
 {
@@ -148,7 +152,34 @@ void storeListOfAiports(ifstream &file)
 
 void storeSampleFlights(ifstream &file)
 {
+        string word;
+        FlightDetails flight;
     // store as an adjacency matrix
+        while(getline(file, word, ' ')) {
+                flight.source = word;
+
+                getline(file, flight.destination, ' ');
+
+                getline(file, word, ' ');
+                flight.depTime = stoi(word);
+
+                getline(file, word, ' ');
+                flight.arrTime = stoi(word);
+
+                getline(file, word, ' ');
+                flight.cost = stoi(word);
+
+                getline(file, word, ' ');
+                flight.miles = stoi(word);
+
+                getline(file, flight.airline, ' ');
+
+                getline(file, flight.flightID);
+
+                flights[flight.source][flight.destination].push_back(flight);
+
+                //getline(file, word);
+        }
 }
 
 void display_using_airport_code(string code)
@@ -174,12 +205,44 @@ void airports_in_state(string state)
 
 void flights_leaving(string source)
 {
+        int count = 0;
+        for(const auto& destination : flights[source])
+        {
+                for(const auto& flight : destination.second)
+                {
+                        cout << flight.flightID << endl;
+                        count++;
+                }
+
+        }
+        cout << "Total: " << count << endl;
 }
 
 void flights_arriving(string destination)
 {
+        int count = 0;
+        for(const auto& source : flights)
+        {
+                if(flights[source.first].find(destination) != flights[source.first].end())
+                {
+                        for(const auto& flight : flights[source.first][destination])
+                        {
+                                cout << flight.flightID << endl;
+                                count++;
+                        }
+                }
+        }
+        cout << "Total: " << count << endl;
 }
 
 void flights_source_to_destination(string source, string destination)
 {
+        int count = 0;
+        for(const auto& flight : flights[source][destination])
+        {
+                cout << flight.flightID << endl;
+
+                count++;
+        }
+        cout << "Total: " << count << endl;
 }
