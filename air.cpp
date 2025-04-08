@@ -12,9 +12,11 @@ struct AirportDetails {
     string state;
 };
 
-struct FlightDetais {
-    string depTime;
-    string arrTime;
+struct FlightDetails {
+    string source;
+    string destination;
+    int depTime;
+    int arrTime;
     int cost;
     int miles;
     string airline;
