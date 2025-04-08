@@ -188,15 +188,15 @@ void display_using_airport_code(string code)
     cout << "State: " << airports[code].state << endl;
 }
 
-void airports_in_state(string state)
+void airports_in_state(string airport)
 {
     int count = 0;
-    for (const auto& flight : stateTable[state])
+    for (const auto& flight : stateTable[airport])
     {
         cout << flight << endl;
         count++;
     }
-    cout << "There are " << count << " airports in " << state << endl;
+    cout << "There are " << count << " airports in " << airport << endl;
 }
 
 void flights_leaving(string source)
