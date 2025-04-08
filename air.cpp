@@ -247,12 +247,18 @@ void flights_arriving(string destination)
 
 void flights_source_to_destination(string source, string destination)
 {
-        int count = 0;
-        for(const auto& flight : flights[source][destination])
-        {
-                cout << flight.flightID << endl;
+    if (stateTable.find(source) == stateTable.end()) {
+        cout << "Source not found!!!" << endl;
+        return;
+    }
 
-                count++;
+    int count = 0;
+    for (const auto& flight : flights[source]) {
+        if (flight.destination == destination) {
+            cout << flight.flightID << endl;
+            count++;
         }
-        cout << "Total: " << count << endl;
+    }
+
+    cout << "Total: " << count << endl;
 }
