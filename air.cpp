@@ -24,7 +24,8 @@ struct FlightDetails {
 };
 
 typedef unordered_map< string, vector<string> > mapState;
-typedef unordered_map< string, vector<AirportDetails> > mapAirport;
+typedef unordered_map< string, AirportDetails > mapAirport;
+typedef unordered_map< string, unordered_map < string, vector<FlightDetails> > > flightsMatrix;
 
 void displayMenu();
 void storeListOfAiports(ifstream &file);
