@@ -31,13 +31,14 @@ void displayMenu();
 void storeListOfAiports(ifstream &file);
 void storeSampleFlights(ifstream &file);
 void display_using_airport_code(string code);
-void airports_in_state(string state);
+void airports_in_state(string airport);
 void flights_leaving(string source);
 void flights_arriving(string destination);
 void flights_source_to_destination(string source, string destination);
 
 mapState stateTable;
-mapAirport airportTable;
+mapAirport airports;
+flightsMatrix flights;
 
 int main(int argc, char *argv[])
 {
@@ -65,7 +66,7 @@ void displayMenu()
     cout << endl;
     cout << "----------------------------------------------------------------" << endl;
     cout << "1 -> Given airport code, dislay details" << endl;
-    cout << "2 -> Airports in a state  (list & count)" << endl;
+    cout << "2 -> Airports in a airport  (list & count)" << endl;
     cout << "3 -> Flights leaving from source (list & count)" << endl;
     cout << "4 -> Flights arriving at destination (list & count)" << endl;
     cout << "5 -> Flights from source to destination (list & count)" << endl;
@@ -131,28 +132,53 @@ void storeListOfAiports(ifstream &file)
 
     // Airport code to AirportDetails
     while (getline(file, word, ',')) {
-        key = word; // Airport Code
+        data.FAA = word;
         getline(file, word, ',');
-        data.name = word; // Airport Name
+        data.name = word;
         getline(file, word, ',');
-        data.state = word; // State
-        getline(file, word);  // City
+        data.state = word;
+        getline(file, word);
         data.city = word;
 
-        airportTable[key].push_back(data);
+        airports[data.FAA] = data;
     }
 
-    // State to list of airport codes
-    for (const auto& pair : airportTable) {
-        for (const auto& airport : pair.second) {
-            stateTable[airport.state].push_back(pair.first);
-        }
+    // State to Airport Code
+    for (const auto& airport : airports) {
+        stateTable[airport.second.state].push_back(airport.first);
     }
 }
 
 void storeSampleFlights(ifstream &file)
 {
+        string word;
+        FlightDetails flight;
     // store as an adjacency matrix
+        while(getline(file, word, ' ')) {
+                flight.source = word;
+
+                getline(file, flight.destination, ' ');
+
+                getline(file, word, ' ');
+                flight.depTime = stoi(word);
+
+                getline(file, word, ' ');
+                flight.arrTime = stoi(word);
+
+                getline(file, word, ' ');
+                flight.cost = stoi(word);
+
+                getline(file, word, ' ');
+                flight.miles = stoi(word);
+
+                getline(file, flight.airline, ' ');
+
+                getline(file, flight.flightID);
+
+                flights[flight.source][flight.destination].push_back(flight);
+
+                //getline(file, word);
+        }
 }
 
 void display_using_airport_code(string code)
