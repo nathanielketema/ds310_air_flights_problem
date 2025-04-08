@@ -184,6 +184,7 @@ void display_using_airport_code(string code)
         cout << "Airport not found!!!" << endl;
         return;
     }
+    cout << endl;
 
     cout << "Name: " << airports[code].name << endl;
     cout << "City: " << airports[code].city << endl;
@@ -196,6 +197,7 @@ void airports_in_state(string state)
         cout << "State not found!!!" << endl;
         return;
     }
+    cout << endl;
 
     int count = 0;
     for (const auto& flight : stateTable[state])
@@ -203,7 +205,7 @@ void airports_in_state(string state)
         cout << flight << endl;
         count++;
     }
-    cout << "There are " << count << " states in " << state << endl;
+    cout << endl << "There are " << count << " states in " << state << endl;
 }
 
 void flights_leaving(string source)
@@ -212,6 +214,7 @@ void flights_leaving(string source)
         cout << source << " not found!!" << endl;
         return;
     }
+    cout << endl;
 
     int count = 0;
     for (const auto& dest : flights[source]) {
@@ -219,13 +222,14 @@ void flights_leaving(string source)
         count++;
     }
 
-        cout << "Total: " << count << endl;
+    cout << endl << "There are " << count << " flights leaving " << source << endl;
 }
 
 void flights_arriving(string destination)
 {
     int count = 0;
     bool found = false;
+    cout << endl;
     for (const auto& entry : flights) {
         const string& source = entry.first;
         const vector<FlightDetails>& flightList = entry.second;
@@ -239,10 +243,10 @@ void flights_arriving(string destination)
     }
 
     if (!found) {
-        cout << "No flights found arriving at airport: " << destination << endl;
+        cout << endl << "No flights found arriving at airport: " << destination << endl;
     }
 
-    cout << "Total: " << count << endl;
+    cout << endl << "There are " << count << " flights arriving at " << destination << endl;
 }
 
 void flights_source_to_destination(string source, string destination)
@@ -251,6 +255,7 @@ void flights_source_to_destination(string source, string destination)
         cout << "Source not found!!!" << endl;
         return;
     }
+    cout << endl;
 
     int count = 0;
     for (const auto& flight : flights[source]) {
@@ -260,5 +265,5 @@ void flights_source_to_destination(string source, string destination)
         }
     }
 
-    cout << "Total: " << count << endl;
+    cout << endl << "There are " << count << " flights from " << source << " to " << destination << endl;
 }
