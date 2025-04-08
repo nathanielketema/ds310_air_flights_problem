@@ -6,6 +6,7 @@
 using namespace std;
 
 struct AirportDetails {
+    string FAA;
     string name;
     string city;
     string state;
