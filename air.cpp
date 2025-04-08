@@ -215,9 +215,9 @@ void storeListOfAiports(ifstream &file)
         getline(file, word, ',');
         data.name = word;
         getline(file, word, ',');
-        data.city = word;
-        getline(file, word);
         data.state = word;
+        getline(file, word);
+        data.city = word;
 
         airports[data.FAA] = data;
     }
