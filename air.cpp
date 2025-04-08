@@ -209,7 +209,7 @@ void airports_in_state(string state)
 void flights_leaving(string source)
 {
     if (flights.find(source) == flights.end()) {
-        cout << "No flights found leaving airport: " << source << endl;
+        cout << source << " not found!!" << endl;
         return;
     }
 
