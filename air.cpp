@@ -226,7 +226,9 @@ void flights_arriving(string destination)
 {
     int count = 0;
     bool found = false;
-    for (const auto& [source, flightList] : flights) {
+    for (const auto& entry : flights) {
+        const string& source = entry.first;
+        const vector<FlightDetails>& flightList = entry.second;
         for (const auto& flight : flightList) {
             if (flight.destination == destination) {
                 cout << flight.flightID << endl;
