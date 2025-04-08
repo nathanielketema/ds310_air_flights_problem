@@ -198,16 +198,17 @@ void airports_in_state(string airport)
 
 void flights_leaving(string source)
 {
-        int count = 0;
-        for(const auto& destination : flights[source])
-        {
-                for(const auto& flight : destination.second)
-                {
-                        cout << flight.flightID << endl;
-                        count++;
-                }
+    if (flights.find(source) == flights.end()) {
+        cout << "No flights found leaving airport: " << source << endl;
+        return;
+    }
 
-        }
+    int count = 0;
+    for (const auto& dest : flights[source]) {
+        cout << dest.flightID << endl;
+        count++;
+    }
+
         cout << "Total: " << count << endl;
 }
 
