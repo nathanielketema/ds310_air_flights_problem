@@ -35,6 +35,7 @@ void airports_in_state(string state);
 void flights_leaving(string source);
 void flights_arriving(string destination);
 void flights_source_to_destination(string source, string destination);
+void ignoringTime(string source, string destination);
 
 mapState stateTable;
 mapAirport airports;
@@ -70,6 +71,10 @@ void displayMenu()
     cout << "3 -> Flights leaving from source (list & count)" << endl;
     cout << "4 -> Flights arriving at destination (list & count)" << endl;
     cout << "5 -> Flights from source to destination (list & count)" << endl;
+    cout << "6 -> Flight information ignoring time (fewest flights, cheapest route cost, shortest miles flown)" << endl;
+    cout << "7 -> All destinations reachable given arrival time(with at most F flights, for under M total fare, within H hours)" << endl;
+    cout << "8 -> Earliest arrival based on source, destination, and arrival time"<< endl;
+    cout << "9 -> Flights with layover given source, destination, and arrival time (fewest flights, earliest arrival, cheapest trip)" << endl;
     cout << "0 -> Quit" << endl;
     cout << "----------------------------------------------------------------" << endl;
     cout << endl;
@@ -114,6 +119,24 @@ void displayMenu()
                 cin >> destination;
                 flights_source_to_destination(source, destination);
                 break;
+            }
+            case 6: {
+                string source, destination;
+                cout << "Source: ";
+                cin >> source;
+                cout << "Destination: ";
+                cin >> destination;
+                ignoringTime(source, destination);
+                break; 
+            }
+            case 7: {
+                break; 
+            }
+            case 8: {
+                break; 
+            }
+            case 9: {
+                break; 
             }
             case 0:
                 cout << "Program exiting..." << endl;
@@ -266,4 +289,11 @@ void flights_source_to_destination(string source, string destination)
     }
 
     cout << endl << "There are " << count << " flights from " << source << " to " << destination << endl;
+}
+
+void ignoringTime(string source, string destination)
+{
+    // a) fewest flights
+    // b) cheapest route cost 
+    // c) shortest miles flown
 }
