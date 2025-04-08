@@ -31,7 +31,7 @@ void displayMenu();
 void storeListOfAiports(ifstream &file);
 void storeSampleFlights(ifstream &file);
 void display_using_airport_code(string code);
-void airports_in_state(string airport);
+void airports_in_state(string state);
 void flights_leaving(string source);
 void flights_arriving(string destination);
 void flights_source_to_destination(string source, string destination);
@@ -180,20 +180,30 @@ void storeSampleFlights(ifstream &file)
 
 void display_using_airport_code(string code)
 {
+    if (airports.find(code) == airports.end()) {
+        cout << "Airport not found!!!" << endl;
+        return;
+    }
+
     cout << "Name: " << airports[code].name << endl;
     cout << "City: " << airports[code].city << endl;
     cout << "State: " << airports[code].state << endl;
 }
 
-void airports_in_state(string airport)
+void airports_in_state(string state)
 {
+    if (stateTable.find(state) == stateTable.end()) {
+        cout << "State not found!!!" << endl;
+        return;
+    }
+
     int count = 0;
-    for (const auto& flight : stateTable[airport])
+    for (const auto& flight : stateTable[state])
     {
         cout << flight << endl;
         count++;
     }
-    cout << "There are " << count << " airports in " << airport << endl;
+    cout << "There are " << count << " states in " << state << endl;
 }
 
 void flights_leaving(string source)
