@@ -136,9 +136,9 @@ void storeListOfAiports(ifstream &file)
         getline(file, word, ',');
         data.name = word;
         getline(file, word, ',');
-        data.state = word;
-        getline(file, word);
         data.city = word;
+        getline(file, word);
+        data.state = word;
 
         airports[data.FAA] = data;
     }
@@ -247,7 +247,7 @@ void flights_arriving(string destination)
 
 void flights_source_to_destination(string source, string destination)
 {
-    if (stateTable.find(source) == stateTable.end()) {
+    if (flights.find(source) == flights.end()) {
         cout << "Source not found!!!" << endl;
         return;
     }
