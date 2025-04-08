@@ -183,12 +183,9 @@ void storeSampleFlights(ifstream &file)
 
 void display_using_airport_code(string code)
 {
-    int count = 0;
-    for (const auto& state : airportTable[code]) {
-        cout << "Name: " << state.name << endl;
-        cout << "City: " << state.city << endl;
-        cout << "State: " << state.state << endl;
-    }
+    cout << "Name: " << airports[code].name << endl;
+    cout << "City: " << airports[code].city << endl;
+    cout << "State: " << airports[code].state << endl;
 }
 
 void airports_in_state(string state)
