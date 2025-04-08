@@ -7,6 +7,8 @@
 #include <limits>
 #include <set>
 #include <algorithm> // for reverse
+#include <climits>   // for INT_MAX
+#include <sstream>   // for stringstream
 using namespace std;
 
 struct AirportDetails {
@@ -154,17 +156,37 @@ void displayMenu()
             }
             case 7: {
                 string source;
-                int startTime, maxFlights, maxFare, maxHours;
+                int startTime = 0, maxFlights = INT_MAX, maxFare = INT_MAX, maxHours = INT_MAX;
+                string input;
+                
                 cout << "Source: ";
                 cin >> source;
-                cout << "Starting Time (24hr format, e.g. 1430 for 2:30pm): ";
-                cin >> startTime;
-                cout << "Maximum number of flights: ";
-                cin >> maxFlights;
-                cout << "Maximum total fare: $";
-                cin >> maxFare;
-                cout << "Maximum hours: ";
-                cin >> maxHours;
+                
+                cout << "Starting Time (24hr format, e.g. 1430 for 2:30pm, or press Enter to skip): ";
+                cin.ignore(); // Clear newline
+                getline(cin, input);
+                if (!input.empty()) {
+                    startTime = stoi(input);
+                }
+                
+                cout << "Maximum number of flights (or press Enter for unlimited): ";
+                getline(cin, input);
+                if (!input.empty()) {
+                    maxFlights = stoi(input);
+                }
+                
+                cout << "Maximum total fare ($ or press Enter for unlimited): ";
+                getline(cin, input);
+                if (!input.empty()) {
+                    maxFare = stoi(input);
+                }
+                
+                cout << "Maximum hours (or press Enter for unlimited): ";
+                getline(cin, input);
+                if (!input.empty()) {
+                    maxHours = stoi(input);
+                }
+                
                 reachable_destinations(source, startTime, maxFlights, maxFare, maxHours);
                 break; 
             }
@@ -565,8 +587,47 @@ void reachable_destinations(string source, int startTime, int maxFlights, int ma
         return;
     }
     
+    // Show special message for unlimited/default values
+    stringstream ss;
+    
+    string startTimeStr;
+    if (startTime == 0) {
+        startTimeStr = "any time";
+    } else {
+        ss << startTime;
+        startTimeStr = ss.str();
+        ss.str(""); // Clear stringstream
+    }
+    
+    string maxFlightsStr;
+    if (maxFlights == INT_MAX) {
+        maxFlightsStr = "unlimited";
+    } else {
+        ss << maxFlights;
+        maxFlightsStr = ss.str();
+        ss.str(""); // Clear stringstream
+    }
+    
+    string maxFareStr;
+    if (maxFare == INT_MAX) {
+        maxFareStr = "unlimited";
+    } else {
+        ss << "$" << maxFare;
+        maxFareStr = ss.str();
+        ss.str(""); // Clear stringstream
+    }
+    
+    string maxHoursStr;
+    if (maxHours == INT_MAX) {
+        maxHoursStr = "unlimited";
+    } else {
+        ss << maxHours;
+        maxHoursStr = ss.str();
+        ss.str(""); // Clear stringstream
+    }
+    
     // Convert maxHours to minutes to make time calculations easier
-    int maxMinutes = maxHours * 60;
+    int maxMinutes = (maxHours == INT_MAX) ? INT_MAX : maxHours * 60;
     
     // Store reachable destinations with their details
     set<string> reachableDestinations;
@@ -602,7 +663,8 @@ void reachable_destinations(string source, int startTime, int maxFlights, int ma
                 int flightArrTime = flight.arrTime;
                 
                 // Skip flights that depart before the starting time at the first airport
-                if (current.airport == source && flightDeptTime < startTime) {
+                // Only check this if startTime is not the default value (0)
+                if (current.airport == source && startTime != 0 && flightDeptTime < startTime) {
                     continue;
                 }
                 
@@ -622,18 +684,23 @@ void reachable_destinations(string source, int startTime, int maxFlights, int ma
                 // Calculate total time so far
                 int totalTime = 0;
                 if (current.airport == source) {
-                    int startHour = startTime / 100;
-                    int startMin = startTime % 100;
-                    // Time waiting at source + flight time
-                    totalTime = ((deptHour - startHour) * 60 + (deptMin - startMin)) + flightTimeMinutes;
-                    if (totalTime < 0) {
-                        totalTime += 24 * 60; // Add a day if waiting crosses midnight
+                    if (startTime != 0) {
+                        int startHour = startTime / 100;
+                        int startMin = startTime % 100;
+                        // Time waiting at source + flight time
+                        totalTime = ((deptHour - startHour) * 60 + (deptMin - startMin)) + flightTimeMinutes;
+                        if (totalTime < 0) {
+                            totalTime += 24 * 60; // Add a day if waiting crosses midnight
+                        }
+                    } else {
+                        // If no start time specified, only count flight time
+                        totalTime = flightTimeMinutes;
                     }
                 } else {
                     // Add flight time to accumulated time
                     totalTime = bestTimes[current.airport] + flightTimeMinutes;
                     
-                    // Add connection time (minimum 30 minutes)
+                    // Add connection time (minimum 1 minute)
                     int lastArrivalTime = 0;
                     if (!current.path.empty() && current.path.size() > 1) {
                         string prevAirport = current.path[current.path.size() - 2];
@@ -702,8 +769,8 @@ void reachable_destinations(string source, int startTime, int maxFlights, int ma
     
     // Display results
     cout << endl;
-    cout << "Reachable destinations from " << source << " starting at " << startTime << ":" << endl;
-    cout << "Constraints: Max flights = " << maxFlights << ", Max fare = $" << maxFare << ", Max hours = " << maxHours << endl;
+    cout << "Reachable destinations from " << source << " starting at " << startTimeStr << ":" << endl;
+    cout << "Constraints: Max flights = " << maxFlightsStr << ", Max fare = " << maxFareStr << ", Max hours = " << maxHoursStr << endl;
     cout << endl;
     
     if (reachableDestinations.empty()) {
@@ -802,8 +869,8 @@ void earliest_arrival(string source, string destination, int startTime)
                     continue;
                 }
                 
-                // Calculate minimum connection time (30 minutes)
-                int minConnectionTime = 30; // minutes
+                // Calculate minimum connection time (1 minute)
+                int minConnectionTime = 1; // minutes
                 int currentHour = currentTime / 100;
                 int currentMin = currentTime % 100;
                 int departureHour = flight.depTime / 100;
@@ -1060,8 +1127,8 @@ void layover_routes(string source, string destination, string middle, int startT
                                 isNextDay = true;
                             }
                             
-                            // Calculate connection time (minimum 30 minutes)
-                            int minConnectionTime = 30; // minutes
+                            // Calculate connection time (minimum 1 minute)
+                            int minConnectionTime = 1; // minutes
                             int currentHour = currentTime / 100;
                             int currentMin = currentTime % 100;
                             int departureHour = adjustedDepTime / 100;
@@ -1129,8 +1196,8 @@ void layover_routes(string source, string destination, string middle, int startT
                         isNextDay = true;
                     }
                     
-                    // Calculate connection time (minimum 30 minutes)
-                    int minConnectionTime = 30; // minutes
+                    // Calculate connection time (minimum 1 minute)
+                    int minConnectionTime = 1; // minutes
                     int currentHour = currentTime / 100;
                     int currentMin = currentTime % 100;
                     int departureHour = adjustedDepTime / 100;
@@ -1248,8 +1315,8 @@ void layover_routes(string source, string destination, string middle, int startT
                                 isNextDay = true;
                             }
                             
-                            // Calculate connection time (minimum 30 minutes)
-                            int minConnectionTime = 30; // minutes
+                            // Calculate connection time (minimum 1 minute)
+                            int minConnectionTime = 1; // minutes
                             int currentHour = currentTime / 100;
                             int currentMin = currentTime % 100;
                             int departureHour = adjustedDepTime / 100;
@@ -1316,8 +1383,8 @@ void layover_routes(string source, string destination, string middle, int startT
                         isNextDay = true;
                     }
                     
-                    // Calculate connection time (minimum 30 minutes)
-                    int minConnectionTime = 30; // minutes
+                    // Calculate connection time (minimum 1 minute)
+                    int minConnectionTime = 1; // minutes
                     int currentHour = currentTime / 100;
                     int currentMin = currentTime % 100;
                     int departureHour = adjustedDepTime / 100;
@@ -1435,8 +1502,8 @@ void layover_routes(string source, string destination, string middle, int startT
                                 isNextDay = true;
                             }
                             
-                            // Calculate connection time (minimum 30 minutes)
-                            int minConnectionTime = 30; // minutes
+                            // Calculate connection time (minimum 1 minute)
+                            int minConnectionTime = 1; // minutes
                             int currentHour = currentTime / 100;
                             int currentMin = currentTime % 100;
                             int departureHour = adjustedDepTime / 100;
@@ -1503,8 +1570,8 @@ void layover_routes(string source, string destination, string middle, int startT
                         isNextDay = true;
                     }
                     
-                    // Calculate connection time (minimum 30 minutes)
-                    int minConnectionTime = 30; // minutes
+                    // Calculate connection time (minimum 1 minute)
+                    int minConnectionTime = 1; // minutes
                     int currentHour = currentTime / 100;
                     int currentMin = currentTime % 100;
                     int departureHour = adjustedDepTime / 100;
