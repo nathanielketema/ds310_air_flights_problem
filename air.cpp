@@ -224,19 +224,23 @@ void flights_leaving(string source)
 
 void flights_arriving(string destination)
 {
-        int count = 0;
-        for(const auto& source : flights)
-        {
-                if(flights[source.first].find(destination) != flights[source.first].end())
-                {
-                        for(const auto& flight : flights[source.first][destination])
-                        {
-                                cout << flight.flightID << endl;
-                                count++;
-                        }
-                }
+    int count = 0;
+    bool found = false;
+    for (const auto& [source, flightList] : flights) {
+        for (const auto& flight : flightList) {
+            if (flight.destination == destination) {
+                cout << flight.flightID << endl;
+                found = true;
+                count++;
+            }
         }
-        cout << "Total: " << count << endl;
+    }
+
+    if (!found) {
+        cout << "No flights found arriving at airport: " << destination << endl;
+    }
+
+    cout << "Total: " << count << endl;
 }
 
 void flights_source_to_destination(string source, string destination)
