@@ -5,10 +5,10 @@
 #include <vector>
 #include <queue>
 #include <limits>
-#include <set>
-#include <algorithm> // for reverse
-#include <climits>   // for INT_MAX
-#include <sstream>   // for stringstream
+#include <algorithm> 
+#include <climits>   
+#include <sstream>   
+#include "set.h"     
 using namespace std;
 
 struct AirportDetails {
@@ -32,6 +32,14 @@ struct FlightDetails {
 typedef unordered_map< string, vector<string> > mapState;
 typedef unordered_map< string, AirportDetails > mapAirport;
 typedef unordered_map< string, vector<FlightDetails> > flightGraph;
+
+struct MSTEdge {
+    string src;
+    string dest;
+    int cost;
+};
+
+typedef unordered_map<int, string> IndexToAirportMap;
 
 void displayMenu();
 void storeListOfAiports(ifstream &file);
@@ -64,6 +72,99 @@ struct PathNode {
     }
 };
 
+vector<MSTEdge> findMST(const mapAirport& airports, const flightGraph& flights, const vector<string>& airportSubset, const string& startAirport) {
+    vector<MSTEdge> mst;
+    unordered_map<string, int> airportToIndex;
+    unordered_map<int, string> indexToAirport;
+    unordered_map<string, unordered_map<string, int>> cheapestFlights; // Store cheapest flight costs
+
+    // First, find the cheapest flight between each pair of airports in the subset
+    for (const auto& source : airportSubset) {
+        if (flights.find(source) != flights.end()) {
+            for (const auto& flight : flights.at(source)) {
+                if (find(airportSubset.begin(), airportSubset.end(), flight.destination) != airportSubset.end()) {
+                    string dest = flight.destination;
+                    // If we haven't seen this connection before or this flight is cheaper
+                    if (cheapestFlights[source].find(dest) == cheapestFlights[source].end() || 
+                        flight.cost < cheapestFlights[source][dest]) {
+                        cheapestFlights[source][dest] = flight.cost;
+                    }
+                }
+            }
+        }
+    }
+
+    int index = 0;
+    for (const auto& airportCode : airportSubset) {
+        airportToIndex[airportCode] = index;
+        indexToAirport[index] = airportCode;
+        index++;
+    }
+
+    int n = airportSubset.size();
+
+    Set inMST;
+    vector<int> key(n, 999999999);
+    vector<int> parent(n, -1);
+
+    int startIndex = airportToIndex[startAirport];
+    key[startIndex] = 0;
+
+    for (int count = 0; count < n; count++) {
+        int minKey = 999999999;
+        int u = -1;
+        
+        for (int i = 0; i < n; i++) {
+            if (!inMST.isIn(i) && key[i] < minKey) {
+                minKey = key[i];
+                u = i;
+            }
+        }
+
+        if (u == -1) break; // No more vertices to process
+
+        inMST += u;
+
+        if (parent[u] != -1) {
+            string srcAirport = indexToAirport[parent[u]];
+            string destAirport = indexToAirport[u];
+            mst.push_back({srcAirport, destAirport, key[u]});
+        }
+
+        string uAirport = indexToAirport[u];
+        
+        // Check all cheapest flights from current airport
+        if (cheapestFlights.find(uAirport) != cheapestFlights.end()) {
+            for (const auto& flight : cheapestFlights[uAirport]) {
+                string dest = flight.first;
+                int cost = flight.second;
+                
+                if (airportToIndex.find(dest) != airportToIndex.end()) {
+                    int v = airportToIndex[dest];
+                    if (!inMST.isIn(v) && cost < key[v]) {
+                        key[v] = cost;
+                        parent[v] = u;
+                    }
+                }
+            }
+        }
+    }
+
+    return mst;
+}
+
+void printMST(const vector<MSTEdge>& mstEdges) {
+    int totalCost = 0;
+    cout << endl << "Minimum Spanning Tree Edges:" << endl;
+    cout << "----------------------------" << endl;
+    for (const auto& edge : mstEdges)
+    {
+        cout << edge.src << " - " << edge.dest << " : $" << edge.cost << endl;
+        totalCost += edge.cost;
+    }
+    cout << endl << "Total Cost: $" << totalCost << endl;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -76,9 +177,11 @@ int main(int argc, char *argv[])
     listOfAirports.open(argv[1]);
     sampleFlights.open(argv[2]);
 
-
     storeListOfAiports(listOfAirports);
     storeSampleFlights(sampleFlights);
+
+
+
     displayMenu();
 
     return 0;
@@ -98,6 +201,7 @@ void displayMenu()
     cout << "7 -> All destinations reachable given arrival time(with at most F flights, for under M total fare, within H hours)" << endl;
     cout << "8 -> Earliest arrival based on source, destination, and arrival time"<< endl;
     cout << "9 -> Flights with layover given source, destination, and arrival time (fewest flights, earliest arrival, cheapest trip)" << endl;
+    cout << "10 -> Prim" << endl;
     cout << "0 -> Quit" << endl;
     cout << "----------------------------------------------------------------" << endl;
     cout << endl;
@@ -215,6 +319,29 @@ void displayMenu()
                 cin >> startTime;
                 layover_routes(source, destination, middle, startTime);
                 break; 
+            }
+            case 10: {
+                vector<string> vec;
+                string input;
+                int howMany;
+                string startingAirport;
+
+                cout << endl << "Size of subgraph: ";
+                cin >> howMany;
+
+                cout << "Enter Airports below:" << endl;
+                for (int i = 0; i < howMany; i++)
+                {
+                    cin >> input;
+                    vec.push_back(input);
+                }
+
+                cout << "Enter starting airport: ";
+                cin >> startingAirport;
+
+                vector<MSTEdge> mst = findMST(airports, flights, vec, startingAirport);
+                printMST(mst);
+                break;
             }
             case 0:
                 cout << "Program exiting..." << endl;
@@ -369,6 +496,110 @@ void flights_source_to_destination(string source, string destination)
     cout << endl << "There are " << count << " flights from " << source << " to " << destination << endl;
 }
 
+// Helper class to manage string-to-integer mapping
+class StringSet {
+private:
+    Set intSet;
+    unordered_map<string, int> strToInt;
+    unordered_map<int, string> intToStr;
+    int nextInt = 0;
+    
+public:
+    void add(const string& str) {
+        if (strToInt.find(str) == strToInt.end()) {
+            strToInt[str] = nextInt;
+            intToStr[nextInt] = str;
+            nextInt++;
+        }
+        intSet += strToInt[str];
+    }
+    
+    bool contains(const string& str) const {
+        if (strToInt.find(str) == strToInt.end()) return false;
+        return intSet ^ strToInt.at(str);
+    }
+    
+    void remove(const string& str) {
+        if (strToInt.find(str) != strToInt.end()) {
+            Set temp;
+            temp += strToInt[str];
+            intSet = intSet - temp;
+        }
+    }
+    
+    bool isEmpty() const {
+        return !intSet;
+    }
+    
+    int size() const {
+        return intSet.size();
+    }
+    
+    vector<string> getElements() const {
+        vector<string> result;
+        for (int i = 0; i < nextInt; i++) {
+            if (intSet ^ i) {
+                result.push_back(intToStr.at(i));
+            }
+        }
+        return result;
+    }
+};
+
+// Custom hash function for pair<int, string>
+struct PairHash {
+    size_t operator()(const pair<int, string>& p) const {
+        // Combine hash of int and string
+        return hash<int>()(p.first) ^ (hash<string>()(p.second) << 1);
+    }
+};
+
+// Helper class to manage pair-to-integer mapping
+class PairSet {
+private:
+    Set intSet;
+    unordered_map<pair<int, string>, int, PairHash> pairToInt;
+    unordered_map<int, pair<int, string>> intToPair;
+    int nextInt = 0;
+    
+public:
+    void add(const pair<int, string>& p) {
+        if (pairToInt.find(p) == pairToInt.end()) {
+            pairToInt[p] = nextInt;
+            intToPair[nextInt] = p;
+            nextInt++;
+        }
+        intSet += pairToInt[p];
+    }
+    
+    bool contains(const pair<int, string>& p) const {
+        if (pairToInt.find(p) == pairToInt.end()) return false;
+        return intSet ^ pairToInt.at(p);
+    }
+    
+    void remove(const pair<int, string>& p) {
+        if (pairToInt.find(p) != pairToInt.end()) {
+            Set temp;
+            temp += pairToInt[p];
+            intSet = intSet - temp;
+        }
+    }
+    
+    bool isEmpty() const {
+        return !intSet;
+    }
+    
+    vector<pair<int, string>> getElements() const {
+        vector<pair<int, string>> result;
+        for (int i = 0; i < nextInt; i++) {
+            if (intSet ^ i) {
+                result.push_back(intToPair.at(i));
+            }
+        }
+        return result;
+    }
+};
+
 void fewest_flights(string source, string destination)
 {
     if (airports.find(source) == airports.end() || airports.find(destination) == airports.end()) {
@@ -378,11 +609,11 @@ void fewest_flights(string source, string destination)
     
     // BFS to find the shortest path (fewest flights)
     queue<PathNode> q;
-    set<string> visited;
+    StringSet visited;
     
     PathNode start(source);
     q.push(start);
-    visited.insert(source);
+    visited.add(source);
     
     bool found = false;
     PathNode result = start;
@@ -402,7 +633,7 @@ void fewest_flights(string source, string destination)
             for (vector<FlightDetails>::const_iterator flight_it = flights[current.airport].begin(); 
                  flight_it != flights[current.airport].end(); ++flight_it) {
                 const FlightDetails& flight = *flight_it;
-                if (visited.find(flight.destination) == visited.end()) {
+                if (visited.contains(flight.destination)) {
                     PathNode next = current;
                     next.airport = flight.destination;
                     next.path.push_back(flight.destination);
@@ -411,7 +642,7 @@ void fewest_flights(string source, string destination)
                     next.totalMiles += flight.miles;
                     
                     q.push(next);
-                    visited.insert(flight.destination);
+                    visited.add(flight.destination);
                 }
             }
         }
@@ -442,20 +673,20 @@ void cheapest_route(string source, string destination)
     // Dijkstra's algorithm to find the cheapest route
     unordered_map<string, int> dist;
     unordered_map<string, string> prev;
-    set< pair<int, string> > pq; // priority queue (cost, airport)
+    PairSet pq; // priority queue (cost, airport)
     
     // Initialize distances
     for (mapAirport::const_iterator it = airports.begin(); it != airports.end(); ++it) {
         dist[it->first] = numeric_limits<int>::max();
     }
     dist[source] = 0;
-    pq.insert(make_pair(0, source));
+    pq.add(make_pair(0, source));
     
-    while (!pq.empty()) {
-        pair<int, string> current = *pq.begin();
+    while (!pq.isEmpty()) {
+        pair<int, string> current = pq.getElements()[0];
         int current_cost = current.first;
         string current_airport = current.second;
-        pq.erase(pq.begin());
+        pq.remove(current);
         
         if (current_airport == destination) break;
         
@@ -467,13 +698,10 @@ void cheapest_route(string source, string destination)
                 
                 if (new_cost < dist[flight.destination]) {
                     // Can't erase directly by value, need to find the iterator first
-                    set< pair<int, string> >::iterator it = pq.find(make_pair(dist[flight.destination], flight.destination));
-                    if (it != pq.end()) {
-                        pq.erase(it);
-                    }
+                    pq.remove(make_pair(dist[flight.destination], flight.destination));
                     dist[flight.destination] = new_cost;
                     prev[flight.destination] = current_airport;
-                    pq.insert(make_pair(new_cost, flight.destination));
+                    pq.add(make_pair(new_cost, flight.destination));
                 }
             }
         }
@@ -516,20 +744,20 @@ void shortest_miles(string source, string destination)
     // Dijkstra's algorithm to find the shortest route by miles
     unordered_map<string, int> dist;
     unordered_map<string, string> prev;
-    set< pair<int, string> > pq; // priority queue (miles, airport)
+    PairSet pq; // priority queue (miles, airport)
     
     // Initialize distances
     for (mapAirport::const_iterator it = airports.begin(); it != airports.end(); ++it) {
         dist[it->first] = numeric_limits<int>::max();
     }
     dist[source] = 0;
-    pq.insert(make_pair(0, source));
+    pq.add(make_pair(0, source));
     
-    while (!pq.empty()) {
-        pair<int, string> current = *pq.begin();
+    while (!pq.isEmpty()) {
+        pair<int, string> current = pq.getElements()[0];
         int current_miles = current.first;
         string current_airport = current.second;
-        pq.erase(pq.begin());
+        pq.remove(current);
         
         if (current_airport == destination) break;
         
@@ -541,13 +769,10 @@ void shortest_miles(string source, string destination)
                 
                 if (new_miles < dist[flight.destination]) {
                     // Can't erase directly by value, need to find the iterator first
-                    set< pair<int, string> >::iterator it = pq.find(make_pair(dist[flight.destination], flight.destination));
-                    if (it != pq.end()) {
-                        pq.erase(it);
-                    }
+                    pq.remove(make_pair(dist[flight.destination], flight.destination));
                     dist[flight.destination] = new_miles;
                     prev[flight.destination] = current_airport;
-                    pq.insert(make_pair(new_miles, flight.destination));
+                    pq.add(make_pair(new_miles, flight.destination));
                 }
             }
         }
@@ -630,7 +855,7 @@ void reachable_destinations(string source, int startTime, int maxFlights, int ma
     int maxMinutes = (maxHours == INT_MAX) ? INT_MAX : maxHours * 60;
     
     // Store reachable destinations with their details
-    set<string> reachableDestinations;
+    StringSet reachableDestinations;
     unordered_map<string, vector<string> > paths;
     unordered_map<string, int> bestCosts;
     unordered_map<string, int> bestTimes;
@@ -740,13 +965,13 @@ void reachable_destinations(string source, int startTime, int maxFlights, int ma
                 next.totalCost = current.totalCost + flight.cost;
                 
                 // Add/update destination if it meets all constraints
-                if ((reachableDestinations.find(flight.destination) == reachableDestinations.end()) || 
+                if ((reachableDestinations.contains(flight.destination) == false) || 
                     (bestCosts[flight.destination] > next.totalCost) ||
                     (flightCounts[flight.destination] > next.numFlights) ||
                     (bestTimes[flight.destination] > totalTime)) {
                     
                     // Update best values
-                    reachableDestinations.insert(flight.destination);
+                    reachableDestinations.add(flight.destination);
                     bestCosts[flight.destination] = next.totalCost;
                     bestTimes[flight.destination] = totalTime;
                     flightCounts[flight.destination] = next.numFlights;
@@ -773,7 +998,7 @@ void reachable_destinations(string source, int startTime, int maxFlights, int ma
     cout << "Constraints: Max flights = " << maxFlightsStr << ", Max fare = " << maxFareStr << ", Max hours = " << maxHoursStr << endl;
     cout << endl;
     
-    if (reachableDestinations.empty()) {
+    if (reachableDestinations.isEmpty()) {
         cout << "No destinations reachable within the given constraints." << endl;
         return;
     }
@@ -783,8 +1008,7 @@ void reachable_destinations(string source, int startTime, int maxFlights, int ma
     cout << "Destination\tFlights\tCost\tTime(hrs)" << endl;
     cout << "-----------------------------------------------" << endl;
     
-    for (set<string>::const_iterator it = reachableDestinations.begin(); it != reachableDestinations.end(); ++it) {
-        const string& dest = *it;
+    for (const string& dest : reachableDestinations.getElements()) {
         cout << dest << "\t\t" << flightCounts[dest] << "\t$" << bestCosts[dest] 
              << "\t" << (bestTimes[dest] / 60) << "h " << (bestTimes[dest] % 60) << "m" << endl;
         
@@ -828,7 +1052,7 @@ void earliest_arrival(string source, string destination, int startTime)
     
     // Using priority queue with custom comparison
     priority_queue<TimePathNode, vector<TimePathNode>, CompareArrivalTime> pq;
-    set<string> visited;
+    StringSet visited;
     
     // Start node representing being at source airport at startTime
     TimePathNode startNode(source, startTime);
@@ -850,11 +1074,11 @@ void earliest_arrival(string source, string destination, int startTime)
         }
         
         // Skip if we've already processed this airport (with earlier arrival)
-        if (visited.find(current.airport) != visited.end()) {
+        if (visited.contains(current.airport)) {
             continue;
         }
         
-        visited.insert(current.airport);
+        visited.add(current.airport);
         
         // Check all outgoing flights from current airport
         if (flights.find(current.airport) != flights.end()) {
@@ -1054,7 +1278,7 @@ void layover_routes(string source, string destination, string middle, int startT
     // Find route with fewest flights from source to middle
     {
         priority_queue<TimePathNode, vector<TimePathNode>, CompareFlights> pq;
-        set<string> visited;
+        StringSet visited;
         pq.push(startNode);
         bool found = false;
         
@@ -1068,7 +1292,7 @@ void layover_routes(string source, string destination, string middle, int startT
                 
                 // Now find route from middle to destination
                 priority_queue<TimePathNode, vector<TimePathNode>, CompareFlights> pq2;
-                set<string> visited2;
+                StringSet visited2;
                 TimePathNode middleNode(middle, current.arrivalTime);
                 pq2.push(middleNode);
                 bool found2 = false;
@@ -1105,11 +1329,11 @@ void layover_routes(string source, string destination, string middle, int startT
                         break;
                     }
                     
-                    if (visited2.find(current2.airport) != visited2.end()) {
+                    if (visited2.contains(current2.airport)) {
                         continue;
                     }
                     
-                    visited2.insert(current2.airport);
+                    visited2.add(current2.airport);
                     
                     // Check all outgoing flights
                     if (flights.find(current2.airport) != flights.end()) {
@@ -1174,11 +1398,11 @@ void layover_routes(string source, string destination, string middle, int startT
                 if (found) break;
             }
             
-            if (visited.find(current.airport) != visited.end()) {
+            if (visited.contains(current.airport)) {
                 continue;
             }
             
-            visited.insert(current.airport);
+            visited.add(current.airport);
             
             // Check all outgoing flights
             if (flights.find(current.airport) != flights.end()) {
@@ -1242,7 +1466,7 @@ void layover_routes(string source, string destination, string middle, int startT
     // Find route with earliest arrival from source to middle
     {
         priority_queue<TimePathNode, vector<TimePathNode>, CompareArrivalTime> pq;
-        set<string> visited;
+        StringSet visited;
         pq.push(startNode);
         bool found = false;
         
@@ -1256,7 +1480,7 @@ void layover_routes(string source, string destination, string middle, int startT
                 
                 // Now find route from middle to destination
                 priority_queue<TimePathNode, vector<TimePathNode>, CompareArrivalTime> pq2;
-                set<string> visited2;
+                StringSet visited2;
                 TimePathNode middleNode(middle, current.arrivalTime);
                 pq2.push(middleNode);
                 bool found2 = false;
@@ -1293,11 +1517,11 @@ void layover_routes(string source, string destination, string middle, int startT
                         break;
                     }
                     
-                    if (visited2.find(current2.airport) != visited2.end()) {
+                    if (visited2.contains(current2.airport)) {
                         continue;
                     }
                     
-                    visited2.insert(current2.airport);
+                    visited2.add(current2.airport);
                     
                     // Check all outgoing flights
                     if (flights.find(current2.airport) != flights.end()) {
@@ -1361,11 +1585,11 @@ void layover_routes(string source, string destination, string middle, int startT
                 if (found) break;
             }
             
-            if (visited.find(current.airport) != visited.end()) {
+            if (visited.contains(current.airport)) {
                 continue;
             }
             
-            visited.insert(current.airport);
+            visited.add(current.airport);
             
             // Check all outgoing flights
             if (flights.find(current.airport) != flights.end()) {
@@ -1429,7 +1653,7 @@ void layover_routes(string source, string destination, string middle, int startT
     // Find cheapest route from source to middle
     {
         priority_queue<TimePathNode, vector<TimePathNode>, CompareCost> pq;
-        set<string> visited;
+        StringSet visited;
         pq.push(startNode);
         bool found = false;
         
@@ -1443,7 +1667,7 @@ void layover_routes(string source, string destination, string middle, int startT
                 
                 // Now find route from middle to destination
                 priority_queue<TimePathNode, vector<TimePathNode>, CompareCost> pq2;
-                set<string> visited2;
+                StringSet visited2;
                 TimePathNode middleNode(middle, current.arrivalTime);
                 pq2.push(middleNode);
                 bool found2 = false;
@@ -1480,11 +1704,11 @@ void layover_routes(string source, string destination, string middle, int startT
                         break;
                     }
                     
-                    if (visited2.find(current2.airport) != visited2.end()) {
+                    if (visited2.contains(current2.airport)) {
                         continue;
                     }
                     
-                    visited2.insert(current2.airport);
+                    visited2.add(current2.airport);
                     
                     // Check all outgoing flights
                     if (flights.find(current2.airport) != flights.end()) {
@@ -1548,11 +1772,11 @@ void layover_routes(string source, string destination, string middle, int startT
                 if (found) break;
             }
             
-            if (visited.find(current.airport) != visited.end()) {
+            if (visited.contains(current.airport)) {
                 continue;
             }
             
-            visited.insert(current.airport);
+            visited.add(current.airport);
             
             // Check all outgoing flights
             if (flights.find(current.airport) != flights.end()) {
