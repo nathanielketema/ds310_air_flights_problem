@@ -1,2 +1,5 @@
 a.out
 temp.cpp
+zig-out/
+.zig-cache/
+quizn.dSYM/
